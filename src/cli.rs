@@ -21,12 +21,16 @@ pub enum Commands {
 
     /// Render image in ASCII
     Render(AddPath),
+
+    /// Delete images matching given tag and value
+    Delete(AddQueryParameters),
 }
 
 #[derive(Args)]
 pub struct AddPath {
     /// path to image
-    pub path: String,
+    #[arg(trailing_var_arg = true)]
+    pub path: Vec<String>,
 }
 
 #[derive(Args)]
@@ -35,7 +39,8 @@ pub struct AddQueryParameters {
     pub tag: String,
 
     /// value to match
-    pub value: String,
+    #[arg(trailing_var_arg = true)]
+    pub value: Vec<String>,
 }
 
 #[derive(Args)]

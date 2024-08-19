@@ -1,4 +1,4 @@
-# MTN
+# mtn - in progress
 is a cli tool for reading and using image EXIF data
 
 **Current Commands Include:**

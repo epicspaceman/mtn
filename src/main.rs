@@ -39,13 +39,14 @@ fn main() -> Result<()> {
         Commands::Match(added_query_params) => match_exif(added_query_params, default_path)?,
         Commands::Group(added_dir) => group_images(added_dir, default_path)?,
         Commands::Render(added_path) => render_image(added_path)?,
+        Commands::Delete(added_query_parameters) => delete_images(added_query_parameters, default_path)?,
     }
 
     Ok(())
 }
 
 fn show_exif(added_path: &AddPath) -> Result<(), Error> {
-    let path_as_string = &added_path.path;
+    let path_as_string = &added_path.path.join(" ");
     let path = Path::new(&path_as_string);
 
     if !path.exists() || !IMAGE_FILE_TYPES.contains(&path.extension().and_then(OsStr::to_str).unwrap()) {
@@ -91,7 +92,7 @@ fn match_exif(added_query_params: &AddQueryParameters, default_path: String) -> 
         return Ok(());
     }
 
-    let value = &added_query_params.value;
+    let value = &added_query_params.value.join(" ");
 
     let found_images = search_dir(directory, tag_option.unwrap(), &value)?;
 
@@ -138,7 +139,7 @@ fn group_images(added_directory: &AddDirectory, default_path: String) -> Result<
 }
 
 fn render_image(added_path: &AddPath) -> Result<(), Error> {
-    let path_as_str = &added_path.path;
+    let path_as_str = &added_path.path.join(" ");
     let img = image::open(path_as_str).unwrap();
     let gray_img = img.to_luma8();
 
@@ -193,20 +194,54 @@ fn search_dir(directory: &Path, tag: Tag, value: &String) -> Result<Vec<PathBuf>
             let mut images_found_in_directory = search_dir(entry, tag, value)?;
             found_images.append(&mut images_found_in_directory);
         } else if !entry.extension().is_none() && IMAGE_FILE_TYPES.contains(&entry.extension().and_then(OsStr::to_str).unwrap()) {
-            let exif_result = get_exif(entry);
-
-            if !exif_result.is_err() {
-                let exif = exif_result.unwrap();
-                for field in exif.fields() {
-                    if field.tag == tag && &field.display_value().with_unit(&exif).to_string() == value {
-                        found_images.push(entry.clone());
-                    }
-                }
-            } else {
-                println!("Could not read exif for image at {:?}", entry);
-            }
+            let mut filtered_images = filter_images(entry, tag, value);
+            found_images.append(&mut filtered_images)
         }
     }
     return Ok(found_images);
+}
+
+fn filter_images(entry: &PathBuf, tag: Tag, value: &String) -> Vec<PathBuf> {
+    let mut filtered_images = Vec::new();
+    let exif_result = get_exif(entry);
+
+    if !exif_result.is_err() {
+        let exif = exif_result.unwrap();
+        for field in exif.fields() {
+            if field.tag == tag && &field.display_value().with_unit(&exif).to_string() == value {
+                filtered_images.push(entry.clone());
+            }
+        }
+    } 
+
+    return filtered_images;
+}
+
+fn delete_images(added_query_parameters: &AddQueryParameters, default_path: String) -> Result<(), Error> {
+    let directory = Path::new(&default_path);
+
+    if !directory.is_dir() || !directory.exists() {
+        println!("Invalid directory");
+        return Ok(());
+    }
+    
+    let tag_option = get_tag(&added_query_parameters.tag);
+
+    if tag_option.is_none() {
+        println!("Invalid tag");
+        return Ok(());
+    }
+
+    let value = &added_query_parameters.value.join(" ");
+
+    let found_image_paths = search_dir(directory, tag_option.unwrap(), &value)?;
+
+    for image_path in found_image_paths {
+        fs::remove_file(&image_path)
+            .with_context(|| format!("Could not delete image at {:?}", &image_path))?;
+        println!{"Deleted image at {:?}", &image_path}
+    }
+
+    Ok(())
 }
 
