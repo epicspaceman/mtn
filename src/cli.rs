@@ -16,7 +16,7 @@ pub enum Commands {
     /// Find files in given directory that match the tag and value
     Match(AddQueryParameters),
 
-    // Group images with similar tag values into a new directory
+    // Group images with similar tag values into a new directory. When adding a value with multiple words enclose them in quotations.
     Group(AddDirectory),
 
     /// Render image in ASCII
@@ -24,6 +24,9 @@ pub enum Commands {
 
     /// Delete images matching given tag and value
     Delete(AddQueryParameters),
+
+    /// Move images matching given tag into given path. When adding a value with multiple words enclose them in quotations.
+    Move(AddDirectory),
 }
 
 #[derive(Args)]

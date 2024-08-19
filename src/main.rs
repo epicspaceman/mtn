@@ -36,10 +36,11 @@ fn main() -> Result<()> {
 
     match &args.command {
         Commands::View(added_path) => show_exif(added_path)?,
-        Commands::Match(added_query_params) => match_exif(added_query_params, default_path)?,
-        Commands::Group(added_dir) => group_images(added_dir, default_path)?,
+        Commands::Match(added_query_parameters) => match_exif(added_query_parameters, default_path)?,
+        Commands::Group(added_directory) => group_images(added_directory, default_path)?,
         Commands::Render(added_path) => render_image(added_path)?,
         Commands::Delete(added_query_parameters) => delete_images(added_query_parameters, default_path)?,
+        Commands::Move(added_directory) => move_images(added_directory, default_path)?,
     }
 
     Ok(())
@@ -80,7 +81,7 @@ fn show_exif(added_path: &AddPath) -> Result<(), Error> {
 fn match_exif(added_query_params: &AddQueryParameters, default_path: String) -> Result<(), Error> {
     let directory = Path::new(&default_path);
 
-    if !directory.is_dir() || !directory.exists() {
+    if !directory.is_dir() {
         println!("Invalid directory");
         return Ok(());
     }
@@ -104,11 +105,11 @@ fn match_exif(added_query_params: &AddQueryParameters, default_path: String) -> 
 }
 
 fn group_images(added_directory: &AddDirectory, default_path: String) -> Result<(), Error> {
-    let directory_name_as_str = &added_directory.directory_name.join(" ");
+    let new_directory_name_as_str = &added_directory.directory_name.join(" ");
 
-    let directory = Path::new(&default_path);
+    let current_directory = Path::new(&default_path);
 
-    if !directory.is_dir() || !directory.exists() {
+    if !current_directory.is_dir() || !current_directory.exists() {
         println!("Invalid directory");
         return Ok(());
     }
@@ -121,10 +122,10 @@ fn group_images(added_directory: &AddDirectory, default_path: String) -> Result<
     }
     
     let value = &added_directory.value;
-    let found_image_paths = search_dir(directory, tag_option.unwrap(), &value)?;
+    let found_image_paths = search_dir(current_directory, tag_option.unwrap(), &value)?;
 
-    let mut new_directory = PathBuf::from(directory);
-    new_directory.push(directory_name_as_str);
+    let mut new_directory = PathBuf::from(current_directory);
+    new_directory.push(new_directory_name_as_str);
 
     fs::create_dir(&new_directory)?;
 
@@ -245,3 +246,36 @@ fn delete_images(added_query_parameters: &AddQueryParameters, default_path: Stri
     Ok(())
 }
 
+fn move_images(added_directory: &AddDirectory, default_path: String) -> Result<(), Error> {
+    let target_directory_name_as_str = &added_directory.directory_name.join(" ");
+    let target_directory = Path::new(target_directory_name_as_str);
+
+    let current_directory = Path::new(&default_path);
+
+    if target_directory.is_file() {
+        println!("Invalid Directory");
+    }
+
+    if !target_directory.is_dir() {
+        fs::create_dir(&target_directory)?;
+    }
+    
+    let tag_option = get_tag(&added_directory.tag);
+
+    if tag_option.is_none() {
+        println!("Invalid tag");
+        return Ok(());
+    }
+    
+    let value = &added_directory.value;
+    let found_image_paths = search_dir(&current_directory, tag_option.unwrap(), value)?;
+
+    for image_path in found_image_paths {
+        let mut new_image_path = PathBuf::from(&target_directory);
+        new_image_path.push(image_path.file_name().and_then(OsStr::to_str).unwrap());
+
+        fs::rename(image_path, new_image_path)?;
+    }
+
+    Ok(())
+}
