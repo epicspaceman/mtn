@@ -1,0 +1,19 @@
+[package]
+name = "mtn"
+version = "0.1.0"
+authors = ["Robert Lockay <robert.lockay@gmail.com"]
+license = "MIT OR Apache-2.0"
+description = "A tool to query photos metadata"
+readme = "README.md"
+homepage = ""
+repository = ""
+keywords = ["cli", "search", "exif"]
+categories = ["command-line-utilities"]
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
+log = "0.4"
+kamadak-exif = "0.5.5"
+image = "0.25.2"
