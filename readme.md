@@ -1,4 +1,5 @@
-# MTN is a cli tool for reading and using image EXIF data
+# MTN
+is a cli tool for reading and using image EXIF data
 
 **Current Commands Include:**
 * view - Reads useful exif metadata for a given image
