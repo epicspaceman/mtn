@@ -1,13 +1,16 @@
 # mtn - in progress
 is a cli tool for reading and using image EXIF data
 
-**Current Commands Include:**
+## Commands
 * view - Reads useful exif metadata for a given image. Use --all to display all available EXIF tags.
 * match - Finds images in current directory that match the tag and value
 * group - Groups images in current directory matching a given tag and value and moves them into a new sub directory within the current directory
 * render - Prints the image in ASCII
 * delete - Deletes images in current directory matching a given tag and value
 * move - Moves images in current directory matching a given tag and value and moves them into a specified directory. If said directory does not exist a new one will be created.
+
+## Special Values
+* To get the current date use `[[today]]` and to match any value after a given value use `*`
 
 ## List of EXIF tags
 * ImageWidth

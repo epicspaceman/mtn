@@ -1,13 +1,16 @@
+use std::time::SystemTime;
 use std::{ffi::OsStr, path::Path};
 use std::{env, fs};
 use std::path::PathBuf;
 use anyhow::{Context, Error, Ok, Result};
+use chrono::{DateTime, Local};
 use cli::{AddDirectory, AddPath, AddPathForExif, AddQueryParameters};
 use::exif;
 use exif::Tag;
 use clap::Parser;
 
 use image::Pixel;
+use regex::Regex;
 
 mod cli;
 use crate::cli::Cli;
@@ -84,7 +87,12 @@ fn match_exif(added_query_params: &AddQueryParameters, default_path: String) -> 
         return Ok(());
     }
 
-    let value = &added_query_params.value.join(" ");
+    let mut value = added_query_params.value.join(" ").clone();
+
+    if value.starts_with("[[") {
+        let regex = Regex::new(r"\[\[.*\]\]")?;
+        value = regex.replace(&value, smart_date_resolver(&value)).to_string();
+    }
 
     let found_images = search_dir(directory, tag_option.unwrap(), &value)?;
 
@@ -93,6 +101,15 @@ fn match_exif(added_query_params: &AddQueryParameters, default_path: String) -> 
     }
 
     Ok(())
+}
+
+fn smart_date_resolver(value: &String) -> String {
+    if value.starts_with("[[today]]") {
+        let current_datetime: DateTime<Local> = SystemTime::now().into();
+        return current_datetime.format("%Y-%m-%d").to_string();
+    }
+    return value.clone();
+
 }
 
 fn group_images(added_directory: &AddDirectory, default_path: String) -> Result<(), Error> {
@@ -197,14 +214,23 @@ fn filter_images(entry: &PathBuf, tag: Tag, value: &String) -> Vec<PathBuf> {
     let mut filtered_images = Vec::new();
     let exif_result = get_exif(entry);
 
-    if !exif_result.is_err() {
-        let exif = exif_result.unwrap();
-        for field in exif.fields() {
-            if field.tag == tag && &field.display_value().with_unit(&exif).to_string() == value {
-                filtered_images.push(entry.clone());
-            }
+    if exif_result.is_err() {
+        return filtered_images;
+    }
+
+    let exif = exif_result.unwrap();
+    for field in exif.fields() {
+        let does_value_match: bool;
+        if value.ends_with("*") {
+            does_value_match = field.display_value().with_unit(&exif).to_string().starts_with(value.strip_suffix("*").unwrap());
+        } else {
+            does_value_match = &field.display_value().with_unit(&exif).to_string() == value;
         }
-    } 
+
+        if field.tag == tag && does_value_match {
+            filtered_images.push(entry.clone());
+        }
+    }
 
     return filtered_images;
 }
