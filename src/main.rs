@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     let default_path = current_working_directory.into_os_string().into_string().unwrap();
 
     match &args.command {
-        Commands::Read(added_path) => show_exif(added_path)?,
+        Commands::View(added_path) => show_exif(added_path)?,
         Commands::Match(added_query_params) => match_exif(added_query_params, default_path)?,
         Commands::Group(added_dir) => group_images(added_dir, default_path)?,
         Commands::Render(added_path) => render_image(added_path)?,

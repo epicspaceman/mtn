@@ -11,7 +11,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     /// Read useful exif metadata for a given image
-    Read(AddPath),
+    View(AddPath),
 
     /// Find files in given directory that match the tag and value
     Match(AddQueryParameters),
