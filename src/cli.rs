@@ -11,7 +11,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     /// Read useful exif metadata for a given image
-    View(AddPath),
+    View(AddPathForExif),
 
     /// Find files in given directory that match the tag and value
     Match(AddQueryParameters),
@@ -27,6 +27,16 @@ pub enum Commands {
 
     /// Move images matching given tag into given path. When adding a value with multiple words enclose them in quotations.
     Move(AddDirectory),
+}
+
+#[derive(Args)]
+pub struct AddPathForExif {
+    #[clap(short, long)]
+    pub all: bool,
+
+    /// path to image
+    #[arg(trailing_var_arg = true)]
+    pub path: Vec<String>,
 }
 
 #[derive(Args)]

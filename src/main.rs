@@ -2,7 +2,7 @@ use std::{ffi::OsStr, path::Path};
 use std::{env, fs};
 use std::path::PathBuf;
 use anyhow::{Context, Error, Ok, Result};
-use cli::{AddDirectory, AddPath, AddQueryParameters};
+use cli::{AddDirectory, AddPath, AddPathForExif, AddQueryParameters};
 use::exif;
 use exif::Tag;
 use clap::Parser;
@@ -13,20 +13,12 @@ mod cli;
 use crate::cli::Cli;
 use crate::cli::Commands;
 
+mod tags;
+use tags::{ID_TAGS, USEFUL_ID_TAGS, get_tag};
+
 static IMAGE_FILE_TYPES: [&str; 13] = ["TIFF", "JPEG", "HEIF", "PNG", "WebP", "JPG", "tiff", "jpg", "jpeg", "heif", "png", "WEBP", "webp"];
 
 static LUMA_MAX_VALUE: usize = 255;
-
-static ID_TAGS: [Tag; 15]  = [Tag::Model, Tag::DateTime, Tag::ExposureTime, Tag::FNumber, Tag::ShutterSpeedValue, Tag::ApertureValue, Tag::ExposureBiasValue, Tag::Flash, Tag::FocalLength, Tag::ColorSpace, Tag::ExposureMode, Tag::WhiteBalance, Tag::CameraOwnerName, Tag::LensModel, Tag::ImageDescription];
-
-fn get_tag(key: &str) -> Option<Tag> {
-    for t in ID_TAGS {
-        if t.to_string().trim() == key {
-            return Some(t);
-        }
-    }
-    None
-}
 
 fn main() -> Result<()> {
     let args = Cli::parse();
@@ -46,7 +38,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn show_exif(added_path: &AddPath) -> Result<(), Error> {
+fn show_exif(added_path: &AddPathForExif) -> Result<(), Error> {
     let path_as_string = &added_path.path.join(" ");
     let path = Path::new(&path_as_string);
 
@@ -65,11 +57,10 @@ fn show_exif(added_path: &AddPath) -> Result<(), Error> {
 
     for field in exif.fields() {
         // TODO add option to display all tags
-        if ID_TAGS.contains(&field.tag) {
-            if field.tag == Tag(exif::Context::Exif, 0) {
-                println!("Custom Tag: {}",
-                    field.display_value().with_unit(&exif));
-            }
+        if added_path.all && ID_TAGS.contains(&field.tag) {
+            println!("{}: {}",
+                field.tag, field.display_value().with_unit(&exif));
+        } else if USEFUL_ID_TAGS.contains(&field.tag) {
             println!("{}: {}",
                 field.tag, field.display_value().with_unit(&exif));
         }
