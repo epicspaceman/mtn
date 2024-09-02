@@ -19,6 +19,9 @@ use crate::cli::Commands;
 mod tags;
 use tags::{ID_TAGS, USEFUL_ID_TAGS, get_tag};
 
+#[cfg(test)]
+mod tests;
+
 static IMAGE_FILE_TYPES: [&str; 13] = ["TIFF", "JPEG", "HEIF", "PNG", "WebP", "JPG", "tiff", "jpg", "jpeg", "heif", "png", "WEBP", "webp"];
 
 static LUMA_MAX_VALUE: usize = 255;
@@ -26,10 +29,16 @@ static LUMA_MAX_VALUE: usize = 255;
 fn main() -> Result<()> {
     let args = Cli::parse();
 
+    match_command(&args.command)?;
+
+    Ok(())
+}
+
+fn match_command(command: &Commands) -> Result<()> {
     let current_working_directory = env::current_dir().unwrap();
     let default_path = current_working_directory.into_os_string().into_string().unwrap();
 
-    match &args.command {
+    match command {
         Commands::View(added_path) => show_exif(added_path)?,
         Commands::Match(added_query_parameters) => match_exif(added_query_parameters, default_path)?,
         Commands::Group(added_directory) => group_images(added_directory, default_path)?,
@@ -45,7 +54,7 @@ fn show_exif(added_path: &AddPathForExif) -> Result<(), Error> {
     let path_as_string = &added_path.path.join(" ");
     let path = Path::new(&path_as_string);
 
-    if !path.exists() || !IMAGE_FILE_TYPES.contains(&path.extension().and_then(OsStr::to_str).unwrap()) {
+    if !path.exists() || !path.is_file() || !IMAGE_FILE_TYPES.contains(&path.extension().and_then(OsStr::to_str).unwrap()) {
         println!("Not an image");
         return Ok(());
     }
